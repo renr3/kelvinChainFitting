@@ -35,25 +35,26 @@ class kelvinChainModel ():
         self.modifiedDoublePowerLawModel=None
         self.dirichletSeriesModel=None
 
-    def fitKelvinChain_doublePowerLawMethod(self, numberOfChains:int):
-        """
-        This method is a wrapper for fitting Kelvin chains. It performs a stack of other methods all together
-
-        Parameters
-        numberOfChains (int): number of chains that will compose the Kelvin Chain model
-        """
-        #Check if a DPL has been fitted to the data. If not, fit it.
-        if self.doublePowerLawModel is None:
-            self.fitDoublePowerLaw()
-
     #Smoothing curves method
-    def fitDoublePowerLaw(self, typeOfDPL='classical', graphVisualization=False, mrkSz=5, plotSlicingFactor=1, axisObjectToPlot=None):
+    def fitDoublePowerLaw(self, typeOfDPL:str='classical', graphVisualization:bool=False, mrkSz:int=5, plotSlicingFactor:int=1, axisObjectToPlot:object=None):
         """
-        This is the method for fitting the traditional DPL, of the form:
+        This is the method for fitting a DPL, which can be of the form 'classical' form:
 
         J(t,t')=(1/E0)+(ϕ1/E0)*(t'^(-m))*((t-t')^n)
 
+        Or the 'modified' form, in which the E-modulus evolution is included in the creep law:
+
+        J(t,t')=(1/E0*exp(p/(t**q)))+(ϕ1/E0)*(t'^(-m))*((t-t')^n)
+
         Many guidelines of the procedure herein implemented are based on the paper "Double power law for basic creep of concrete", by Bazant and Osman from 1976.
+
+        Parameters
+        ----------
+        typeOfDPL (str): defines which form of the DPL is to be fitted, the 'classical' or the 'modified' form
+        graphVisualization (bool): defines if a graphic should be plotted with the results of the fitting
+        mrkSz (int): if graph visualization is true, defines the marker size to be used in the curves
+        plotSlicingFactor (int): if graph visualization is true, defines the density of points to be considered, equal to one every plotSlicingFactor
+        axisObjectToPlot (axis object): if graph visualization is true, you can pass a matplotlib axis object to be used in the plot (useful when you want to plot over an already existing plot)
         """
         #TODO: Check for non-aging compliance
 
@@ -113,9 +114,9 @@ class kelvinChainModel ():
                         axisObjectToPlot.plot(complianceSeries[0][::plotSlicingFactor]-self.complianceAges[enum],(np.array([self.DPLfunction((t,self.complianceAges[enum]),popt[0],popt[1],popt[2],popt[3]) for t in complianceSeries[0][::plotSlicingFactor]]))*conversionFactor_compliance*(1e6), c=c, marker='x',markersize=mrkSz,linestyle='--', label="DPL-"+"{:.1f}".format(self.complianceAges[enum])+"d")
                 elif typeOfDPL == 'modified':
                     if axisObjectToPlot is None:
-                        plt.plot(complianceSeries[0][::plotSlicingFactor]-self.complianceAges[enum],(np.array([self.modifiedDPLfunction((t,self.complianceAges[enum]),popt[0],popt[1],popt[2],popt[3],popt[4],popt[5]) for t in complianceSeries[0][::plotSlicingFactor]]))*conversionFactor_compliance*(1e6), c=c, marker='x',markersize=mrkSz,linestyle='-', label="DPL-"+"{:.1f}".format(self.complianceAges[enum])+"d")
+                        plt.plot(complianceSeries[0][::plotSlicingFactor]-self.complianceAges[enum],(np.array([self.modifiedDPLfunction((t,self.complianceAges[enum]),popt[0],popt[1],popt[2],popt[3],popt[4],popt[5]) for t in complianceSeries[0][::plotSlicingFactor]]))*conversionFactor_compliance*(1e6), c=c, marker='x',markersize=mrkSz,linestyle='-', label="DPL-$t_{0}$="+"{:.1f}".format(self.complianceAges[enum])+"d")
                     else: 
-                        axisObjectToPlot.plot(complianceSeries[0][::plotSlicingFactor]-self.complianceAges[enum],(np.array([self.modifiedDPLfunction((t,self.complianceAges[enum]),popt[0],popt[1],popt[2],popt[3],popt[4],popt[5]) for t in complianceSeries[0][::plotSlicingFactor]]))*conversionFactor_compliance*(1e6), c=c, marker='x',markersize=mrkSz,linestyle='-', label="DPL-"+"{:.1f}".format(self.complianceAges[enum])+"d")
+                        axisObjectToPlot.plot(complianceSeries[0][::plotSlicingFactor]-self.complianceAges[enum],(np.array([self.modifiedDPLfunction((t,self.complianceAges[enum]),popt[0],popt[1],popt[2],popt[3],popt[4],popt[5]) for t in complianceSeries[0][::plotSlicingFactor]]))*conversionFactor_compliance*(1e6), c=c, marker='x',markersize=mrkSz,linestyle='-', label="DPL-$t_{0}$="+"{:.1f}".format(self.complianceAges[enum])+"d")
             if axisObjectToPlot is None:
                 plt.xscale('log')
                 plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
@@ -131,14 +132,14 @@ class kelvinChainModel ():
 
     def DPLfunction(self, T, E_0, ϕ_1, m, n):
         """
-        This is a classic DPL
+        This method is to evaluate a classic DPL, given the parameters informed
         """
         t,t_line=T        
         return ((1/(E_0)))+(ϕ_1/E_0)*((np.array(t_line))**(-m))*((np.array(t-t_line))**(n))
 
     def modifiedDPLfunction(self, T, E_0, ϕ_1, m, n, p, q):
         """
-        This is a method that represents a modified DPL, with the constant term possessing an age dependency
+        This is a method is to evaluate a modified DPL, with the constant term possessing an age dependency, given the parameters informed
         """
         t,t_line=T        
         #return (1/(E_0*np.exp(-q/(np.array(t_line))**(p))))+(ϕ_1/(E_0*np.exp(-q/(np.array(t_line))**(p))))*((np.array(t_line))**(-m))*((np.array(t-t_line))**(n))
@@ -189,7 +190,7 @@ class kelvinChainModel ():
         creepTimesInterval (list): A list [t_min, t_max, number], in which t_min is the minimum creep time, t_max is the maximum creep time, and number is the number of creep times to be sampled from that interval. Only used if the fitting is performed based on a previously fitted model for data smoothing.
         qμ (float): The exponent qμ in the time factor of the Dirichlet series, such as (t/𝜏μ)^qμ. Traditionally, qμ=1, but the book "Mathematical Modelling of Creep and Shrinkage" indicates qμ=2/3 may better suit concrete data
         retardationTimesRange (list): a list [𝜏1, 𝜏N] in a way that 𝜏1 is the smallest 𝜏 to consider, and 𝜏N is the largest 𝜏 to consider
-        retardationTimesFactor (int): an optional factor that will change the traditional 10^(1/qu) factor for distributing the retardation times to 10^(retardationTimesFactor). Useful if a coarser or finer mesh of retardation times is desired.
+        retardationTimesFactor (int): an optional factor that will change the traditional 10^(1/qu) factor for distributing the retardation times to (retardationTimesFactor). Useful if a coarser or finer mesh of retardation times is desired.
         graphVisualization (bool): View the result of fitting graphically.
         mrkSz (int): the marker size in the plot.
         plotSlicingFactor (int): the factor that will be used in the graphVisualization to make the graphs less dense.
@@ -254,16 +255,19 @@ class kelvinChainModel ():
         if retardationTimesFactor is None:
             factorRetardationTimes=10**(1/qμ)
         else:
-            factorRetardationTimes=10**(retardationTimesFactor)
+            factorRetardationTimes=retardationTimesFactor
         if retardationTimesRange is None:
             𝜏1=10**(-9) #the first retardation time is to model the instantaneous response
             𝜏2=min([3*creepTimesInterval[0], 0.1*loadingAgesInterval[0]]) #according to recommendations of "Mathematical..." book
             𝜏N_proposed=0.5*creepTimesInterval[1]
+            retardationTimes=[𝜏1, 𝜏2]
         else:
             𝜏1=retardationTimesRange[0]
-            𝜏N_proposed=retardationTimesRange[1]
+            𝜏2=retardationTimesRange[1]
+            𝜏N_proposed=retardationTimesRange[2]
+            retardationTimes=[𝜏1,𝜏2]
         #Start building the retardation time array
-        retardationTimes=[𝜏1, 𝜏2]
+        
         #Now, build the vector retardationTimes. We will stop when the last retardation time is equal or higher than 𝜏N_proposed
         while retardationTimes[-1] <= 𝜏N_proposed:
             retardationTimes.append(retardationTimes[-1]*factorRetardationTimes)
@@ -277,9 +281,11 @@ class kelvinChainModel ():
                 selectedBounds=(0,1e15)
                 p0_guess=[modulusGuess for 𝜏 in retardationTimes]
             else:
-                selectedBounds=(modulusList[-1],[np.inf for elements in modulusList[-1]])
-                p0_guess=[modulus for modulus in modulusList[-1]]
-                print(selectedBounds)
+                #selectedBounds=(modulusList[-1],[np.inf for elements in modulusList[-1]])
+                selectedBounds=(0,1e15)
+                #p0_guess=[modulus for modulus in modulusList[-1]]
+                p0_guess=[modulusGuess for 𝜏 in retardationTimes]
+                #print(selectedBounds)
             popt, pcov = curve_fit(lambda t, *modulus: self.dirichletFunction(retardationTimes, qμ, t_line, t, modulus), t_creep, J, p0=p0_guess, bounds=selectedBounds, maxfev = 5000)
             modulusList.append(popt)
             pcovList.append(pcov)
@@ -294,9 +300,9 @@ class kelvinChainModel ():
                 #plt.plot(t_real[enum]-t_lines, J_real[enum]*1e6, label="data-"+"{:.1f}".format(t_lines)+" days", c=c, marker='o', linestyle='none')
                 J_dirichletSeries = self.dirichletFunction(retardationTimes, qμ, t_lines, t_real[enum], modulusList[enum])
                 if axisObjectToPlot is None:
-                    plt.plot(t_real[enum][::plotSlicingFactor]-t_lines, J_dirichletSeries[::plotSlicingFactor]*conversionFactor*1e6, label="KC-"+"{:.1f}".format(t_lines)+"d", c=c, marker='v',markersize=mrkSz, linestyle='--')
+                    plt.plot(t_real[enum][::plotSlicingFactor]-t_lines, J_dirichletSeries[::plotSlicingFactor]*conversionFactor*1e6, label="KC-$t_{0}$="+"{:.1f}".format(t_lines)+"d", c=c, marker='v',markersize=mrkSz, linestyle='--')
                 else:
-                    axisObjectToPlot.plot(t_real[enum][::plotSlicingFactor]-t_lines, J_dirichletSeries[::plotSlicingFactor]*conversionFactor*1e6, label="KC-"+"{:.1f}".format(t_lines)+"d", c=c, marker='v',markersize=mrkSz, linestyle='--')
+                    axisObjectToPlot.plot(t_real[enum][::plotSlicingFactor]-t_lines, J_dirichletSeries[::plotSlicingFactor]*conversionFactor*1e6, label="KC-$t_{0}$="+"{:.1f}".format(t_lines)+"d", c=c, marker='v',markersize=mrkSz, linestyle='--')
                 #plt.plot(complianceSeries[0][::plotSlicingFactor]-self.complianceAges[enum],(np.array([self.DPLfunction((t,self.complianceAges[enum]),popt[0],popt[1],popt[2],popt[3]) for t in complianceSeries[0][::plotSlicingFactor]]))*conversionFactor_compliance*(1e6), c=c, marker='x',markersize=mrkSz,linestyle='none', label="DPL-"+"{:.1f}".format(self.complianceAges[enum])+" days")
             if axisObjectToPlot is None:
                 plt.xscale('log')
